@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Quiz</title>
+    <script>
+        function toggleOptions() {
+            var questionType = document.getElementById('question_type').value;
+            if (questionType === 'multiple_choice') {
+                document.getElementById('multiple_choice_options').style.display = 'block';
+                document.getElementById('true_false_option').style.display = 'none';
+            } else if (questionType === 'true_false') {
+                document.getElementById('multiple_choice_options').style.display = 'none';
+                document.getElementById('true_false_option').style.display = 'block';
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Create Quiz</h1>
+
+    {% if not quiz %}
+    <form method="post">
+        <label for="quiz_title">Quiz Title:</label>
+        <input type="text" id="quiz_title" name="quiz_title" required>
+        <button type="submit">Create Quiz</button>
+    </form>
+    {% endif %}
+
+    {% if quiz %}
+    <h2>Add Questions to {{ quiz.title }}</h2>
+    <form method="post">
+        <input type="hidden" name="quiz_id" value="{{ quiz.id }}">
+        <label for="question_text">Question:</label>
+        <input type="text" id="question_text" name="question_text" required>
+
+        <label for="question_type">Question Type:</label>
+        <select id="question_type" name="question_type" onchange="toggleOptions()">
+            <option value="multiple_choice">Multiple Choice</option>
+            <option value="true_false">True or False</option>
+        </select>
+
+        <div id="multiple_choice_options" style="display: none;">
+            <label for="option1">Option 1:</label>
+            <input type="text" id="option1" name="option1" required>
+            <label for="option2">Option 2:</label>
+            <input type="text" id="option2" name="option2" required>
+            <label for="option3">Option 3:</label>
+            <input type="text" id="option3" name="option3" required>
+            <label for="option4">Option 4:</label>
+            <input type="text" id="option4" name="option4" required>
+            
+            <label for="correct_answer">Correct Answer:</label>
+            <select id="correct_answer" name="correct_answer">
+                <option value="option1">Option 1</option>
+                <option value="option2">Option 2</option>
+                <option value="option3">Option 3</option>
+                <option value="option4">Option 4</option>
+            </select>
+        </div>
+
+        <div id="true_false_option" style="display: none;">
+            <label>Is the statement true or false?</label>
+            <select name="true_false">
+                <option value="true">True</option>
+                <option value="false">False</option>
+            </select>
+        </div>
+
+        <button type="submit">Add Question</button>
+    </form>
+    {% endif %}
+</body>
+</html>
