@@ -1,2 +1,2 @@
 # Quiz-Game
-Open Sorce alternativ for Kahoot
+Open Source alternativ for Kahoot

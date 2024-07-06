@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Room {{ room_code }}</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+      const socket = io();
+
+      socket.on('connect', () => {
+        socket.emit('join', {room: '{{ room_code }}', name: 'Server'});
+      });
+
+      socket.on('player_joined', (data) => {
+        const playerList = document.getElementById('playerList');
+        const newPlayer = document.createElement('li');
+        newPlayer.innerText = data.name;
+        playerList.appendChild(newPlayer);
+      });
+
+      function startQuiz() {
+        alert('Start quiz functionality will be implemented later.');
+      }
+    </script>
+  </head>
+  <body>
+    <h1>Room Code: {{ room_code }}</h1>
+    <ul id="playerList"></ul>
+    <button onclick="startQuiz()">Start Quiz</button>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Create or Join a Room</title>
+  </head>
+  <body>
+    <h1>Create a Room</h1>
+    <form action="/create_room" method="post">
+      <button type="submit">Create Room</button>
+    </form>
+
+    <h1>Join a Room</h1>
+    <form action="/room/<room_code>" method="get">
+      <input type="text" name="room_code" placeholder="Enter Room Code" required>
+      <button type="submit">Join Room</button>
+    </form>
+  </body>
+</html>
