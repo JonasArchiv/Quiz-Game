@@ -28,8 +28,8 @@ class Quiz(db.Model):
 class Question(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     question_text = db.Column(db.String(500), nullable=False)
-    question_type = db.Column(db.String(50), nullable=False)  # 'multiple_choice' or 'true_false'
-    options = db.Column(db.PickleType, nullable=True)  # For multiple choice options
+    question_type = db.Column(db.String(50), nullable=False)
+    options = db.Column(db.PickleType, nullable=True)
     correct_answer = db.Column(db.String(500), nullable=False)
     quiz_id = db.Column(db.Integer, db.ForeignKey('quiz.id'), nullable=False)
 
@@ -165,6 +165,27 @@ def edit_quiz(quiz_id):
         return redirect(url_for('quizzes'))
 
     return render_template('edit_quiz.html', quiz=quiz)
+
+
+@app.route('/start_quiz/<int:quiz_id>', methods=['GET', 'POST'])
+def start_quiz(quiz_id):
+    if 'user_id' not in session:
+        flash('You need to be logged in to start a quiz.')
+        return redirect(url_for('login'))
+
+    quiz = Quiz.query.get_or_404(quiz_id)
+
+    if request.method == 'POST':
+        # Process the quiz answers submitted by the user
+        score = 0
+        for question in quiz.questions:
+            user_answer = request.form.get(str(question.id))
+            if user_answer == question.correct_answer:
+                score += 1
+        flash(f'You scored {score} out of {len(quiz.questions)}')
+        return redirect(url_for('quizzes'))
+
+    return render_template('start_quiz.html', quiz=quiz)
 
 
 @socketio.on('join')

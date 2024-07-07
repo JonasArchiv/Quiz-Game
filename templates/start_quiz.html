@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Start Quiz</title>
+</head>
+<body>
+    <h1>Quiz: {{ quiz.title }}</h1>
+    <form method="post">
+        {% for question in quiz.questions %}
+            <div>
+                <p>{{ question.question_text }}</p>
+                {% if question.question_type == 'multiple_choice' %}
+                    {% for option_key, option_value in question.options.items() %}
+                        <label>
+                            <input type="radio" name="{{ question.id }}" value="{{ option_value }}" required>
+                            {{ option_value }}
+                        </label><br>
+                    {% endfor %}
+                {% elif question.question_type == 'true_false' %}
+                    <label>
+                        <input type="radio" name="{{ question.id }}" value="true" required> True
+                    </label><br>
+                    <label>
+                        <input type="radio" name="{{ question.id }}" value="false" required> False
+                    </label><br>
+                {% endif %}
+            </div>
+        {% endfor %}
+        <button type="submit">Submit Quiz</button>
+    </form>
+    <a href="{{ url_for('quizzes') }}">Back to All Quizzes</a>
+</body>
+</html>
