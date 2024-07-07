@@ -120,11 +120,13 @@ def create_quiz():
                     'option4': request.form['option4']
                 }
                 correct_answer = request.form['correct_answer']
-                new_question = Question(question_text=question_text, question_type=question_type, options=options, correct_answer=correct_answer, quiz_id=quiz.id)
+                new_question = Question(question_text=question_text, question_type=question_type, options=options,
+                                        correct_answer=correct_answer, quiz_id=quiz.id)
             elif question_type == 'true_false':
                 correct_answer = request.form['true_false']
-                new_question = Question(question_text=question_text, question_type=question_type, correct_answer=correct_answer, quiz_id=quiz.id)
-            
+                new_question = Question(question_text=question_text, question_type=question_type,
+                                        correct_answer=correct_answer, quiz_id=quiz.id)
+
             db.session.add(new_question)
             db.session.commit()
             flash('Question added successfully.')
@@ -132,6 +134,37 @@ def create_quiz():
 
     return render_template('create_quiz.html')
 
+
+@app.route('/quizzes')
+def quizzes():
+    if 'user_id' not in session:
+        flash('You need to be logged in to view quizzes.')
+        return redirect(url_for('login'))
+
+    all_quizzes = Quiz.query.all()
+    return render_template('quizzes.html', quizzes=all_quizzes)
+
+
+@app.route('/edit_quiz/<int:quiz_id>', methods=['GET', 'POST'])
+def edit_quiz(quiz_id):
+    if 'user_id' not in session:
+        flash('You need to be logged in to edit a quiz.')
+        return redirect(url_for('login'))
+
+    quiz = Quiz.query.get_or_404(quiz_id)
+
+    if quiz.user_id != session['user_id']:
+        flash('You do not have permission to edit this quiz.')
+        return redirect(url_for('quizzes'))
+
+    if request.method == 'POST':
+        title = request.form['quiz_title']
+        quiz.title = title
+        db.session.commit()
+        flash('Quiz updated successfully.')
+        return redirect(url_for('quizzes'))
+
+    return render_template('edit_quiz.html', quiz=quiz)
 
 
 @socketio.on('join')
