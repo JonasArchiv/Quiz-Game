@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO, emit, join_room
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 import random
 import string
 
@@ -10,6 +11,8 @@ app.config['SECRET_KEY'] = 'supersecretkey'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.db'
 db = SQLAlchemy(app)
 socketio = SocketIO(app)
+
+rooms = {}
 
 
 class User(db.Model):
@@ -167,25 +170,33 @@ def edit_quiz(quiz_id):
     return render_template('edit_quiz.html', quiz=quiz)
 
 
-@app.route('/start_quiz/<int:quiz_id>', methods=['GET', 'POST'])
-def start_quiz(quiz_id):
+@app.route('/start_quiz/<room_code>', methods=['GET', 'POST'])
+def start_quiz(room_code):
     if 'user_id' not in session:
         flash('You need to be logged in to start a quiz.')
         return redirect(url_for('login'))
 
-    quiz = Quiz.query.get_or_404(quiz_id)
+    if room_code not in rooms:
+        return 'Room not found!', 404
 
-    if request.method == 'POST':
-        # Process the quiz answers submitted by the user
-        score = 0
-        for question in quiz.questions:
-            user_answer = request.form.get(str(question.id))
-            if user_answer == question.correct_answer:
-                score += 1
-        flash(f'You scored {score} out of {len(quiz.questions)}')
-        return redirect(url_for('quizzes'))
+    room = rooms[room_code]
+    room['current_question'] = 0
+    room['start_time'] = datetime.now()
+    room['scores'] = {sid: 0 for sid in room['players']}
 
-    return render_template('start_quiz.html', quiz=quiz)
+    question = get_next_question(room_code)
+    emit('next_question', question, room=room_code)
+
+    return render_template('room.html', room_code=room_code)
+
+
+def get_next_question(room_code):
+    room = rooms[room_code]
+    quiz = Quiz.query.get(room['quiz_id'])
+    if room['current_question'] >= len(quiz.questions):
+        return None
+    question = quiz.questions[room['current_question']]
+    return {'id': question.id, 'text': question.question_text, 'options': question.options}
 
 
 @socketio.on('join')
@@ -195,6 +206,36 @@ def on_join(data):
     join_room(room_code)
     rooms[room_code]['players'][request.sid] = player_name
     emit('player_joined', {'name': player_name}, room=room_code)
+
+
+@socketio.on('submit_answer')
+def on_submit_answer(data):
+    room_code = data['room']
+    answer = data['answer']
+    player_sid = request.sid
+
+    room = rooms[room_code]
+    question_id = room['current_question']
+    quiz = Quiz.query.get(room['quiz_id'])
+    question = quiz.questions[question_id]
+
+    end_time = datetime.now()
+    time_taken = (end_time - room['start_time']).total_seconds()
+
+    if answer == question.correct_answer:
+        score = max(1000 - int(time_taken * 100), 0)
+        room['scores'][player_sid] += score
+        emit('answer_result', {'correct': True, 'score': score}, to=player_sid)
+    else:
+        emit('answer_result', {'correct': False, 'score': 0}, to=player_sid)
+
+    room['current_question'] += 1
+    if room['current_question'] < len(quiz.questions):
+        room['start_time'] = datetime.now()
+        next_question = get_next_question(room_code)
+        emit('next_question', next_question, room=room_code)
+    else:
+        emit('quiz_finished', {'scores': room['scores']}, room=room_code)
 
 
 if __name__ == '__main__':

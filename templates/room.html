@@ -8,7 +8,7 @@
       const socket = io();
 
       socket.on('connect', () => {
-        socket.emit('join', {room: '{{ room_code }}', name: 'Server'});
+        socket.emit('join', {room: '{{ room_code }}', name: '{{ session["username"] }}'});
       });
 
       socket.on('player_joined', (data) => {
@@ -18,8 +18,44 @@
         playerList.appendChild(newPlayer);
       });
 
+      socket.on('next_question', (question) => {
+        const quizContainer = document.getElementById('quiz-container');
+        quizContainer.innerHTML = `
+          <h2>${question.text}</h2>
+          <form id="question-form">
+            ${question.options.map((option, index) => `
+              <input type="radio" name="answer" value="${option}"> ${option}<br>
+            `).join('')}
+            <button type="submit">Submit Answer</button>
+          </form>
+        `;
+        document.getElementById('question-form').addEventListener('submit', function(e) {
+          e.preventDefault();
+          const answer = document.querySelector('input[name="answer"]:checked').value;
+          submitAnswer(answer);
+        });
+      });
+
+      socket.on('answer_result', (data) => {
+        alert(`Answer was ${data.correct ? 'correct' : 'wrong'}. You scored ${data.score} points.`);
+      });
+
+      socket.on('quiz_finished', (data) => {
+        const quizContainer = document.getElementById('quiz-container');
+        let scoresHtml = '<h2>Final Scores</h2><ul>';
+        for (let player in data.scores) {
+          scoresHtml += `<li>${player}: ${data.scores[player]}</li>`;
+        }
+        scoresHtml += '</ul>';
+        quizContainer.innerHTML = scoresHtml;
+      });
+
+      function submitAnswer(answer) {
+        socket.emit('submit_answer', {room: '{{ room_code }}', answer: answer});
+      }
+
       function startQuiz() {
-        alert('Start quiz functionality will be implemented later.');
+        socket.emit('start_quiz', {room: '{{ room_code }}'});
       }
     </script>
   </head>
@@ -27,5 +63,6 @@
     <h1>Room Code: {{ room_code }}</h1>
     <ul id="playerList"></ul>
     <button onclick="startQuiz()">Start Quiz</button>
+    <div id="quiz-container"></div>
   </body>
 </html>
